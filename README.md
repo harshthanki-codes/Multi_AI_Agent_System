@@ -10,22 +10,22 @@ The system implements an explicit, deterministic Finite State Machine (FSM) wher
 
 ```mermaid
 flowchart TD
-    Start([User Topic]) --> CREATED[Status: CREATED]
-    CREATED --> MOD[Moderator Opening]
-    MOD --> SUPP_R1[Supporting Agent: Opening Case]
-    SUPP_R1 --> OPP_R1[Opposing Agent: Rebuttal]
+    Start(["User Topic"]) --> CREATED["Status: CREATED"]
+    CREATED --> MOD["Moderator: Opening"]
+    MOD --> SUPP_R1["Supporting Agent: Opening Case"]
+    SUPP_R1 --> OPP_R1["Opposing Agent: Rebuttal"]
     
-    OPP_R1 --> CHECK_ROUNDS{Round < Max Rounds?}
-    CHECK_ROUNDS -- Yes (Round++) --> SUPP_RX[Supporting Agent: Defense & Counter]
-    SUPP_RX --> OPP_RX[Opposing Agent: Cross-Rebuttal]
+    OPP_R1 --> CHECK_ROUNDS{"Round < Max Rounds?"}
+    CHECK_ROUNDS -- "Yes (Round++)" --> SUPP_RX["Supporting Agent: Defense & Counter"]
+    SUPP_RX --> OPP_RX["Opposing Agent: Cross-Rebuttal"]
     OPP_RX --> CHECK_ROUNDS
     
-    CHECK_ROUNDS -- No (Limit Reached) --> JUDGE[Judge: Synthesis & Structured Verdict]
-    JUDGE --> AWAIT_HUMAN[Status: AWAITING_HUMAN_DECISION]
+    CHECK_ROUNDS -- "No (Limit Reached)" --> JUDGE["Judge: Synthesis & Structured Verdict"]
+    JUDGE --> AWAIT_HUMAN["Status: AWAITING_HUMAN_DECISION"]
     
-    AWAIT_HUMAN --> HUMAN_DECISION{Human Decision}
-    HUMAN_DECISION -- ACCEPT --> COMPLETED_ACC[Status: COMPLETED (Accepted)]
-    HUMAN_DECISION -- REJECT --> COMPLETED_REJ[Status: COMPLETED (Rejected)]
+    AWAIT_HUMAN --> HUMAN_DECISION{"Human Decision"}
+    HUMAN_DECISION -- "ACCEPT" --> COMPLETED_ACC["Status: COMPLETED (Accepted)"]
+    HUMAN_DECISION -- "REJECT" --> COMPLETED_REJ["Status: COMPLETED (Rejected)"]
 ```
 
 ### System Component Diagram
