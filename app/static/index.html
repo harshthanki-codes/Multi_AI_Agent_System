@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Agent AI Boardroom</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-icon">🏛️</div>
+        <div>
+          <h1>Multi-Agent AI Boardroom</h1>
+          <p class="subtitle">Bounded Multi-Agent Deliberation & Executive Governance</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-outline" id="env-badge">Local Engine</span>
+        <span class="badge badge-status" id="header-status">IDLE</span>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Left Sidebar: Controls & Active Sessions -->
+      <aside class="sidebar">
+        <div class="panel">
+          <h2>Convene Boardroom</h2>
+          <form id="session-form">
+            <div class="form-group">
+              <label for="topic-input">Debate Topic / Proposition</label>
+              <textarea 
+                id="topic-input" 
+                rows="4" 
+                placeholder="e.g., Should we migrate our core monolithic backend to a distributed event-driven microservices architecture this quarter?" 
+                required
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="rounds-select">Max Debate Rounds</label>
+              <select id="rounds-select">
+                <option value="1">1 Round (Opening + Rebuttal)</option>
+                <option value="2" selected>2 Rounds (Standard Scrutiny)</option>
+                <option value="3">3 Rounds (Deep Dive)</option>
+              </select>
+            </div>
+            <button type="submit" id="btn-create" class="btn btn-primary">Start Boardroom Session</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>Active Session Controls</h2>
+          <div id="session-meta" class="meta-card empty-state">
+            No active session selected.
+          </div>
+          <div class="action-buttons">
+            <button id="btn-advance" class="btn btn-secondary" disabled>Next Turn ❯</button>
+            <button id="btn-autorun" class="btn btn-accent" disabled>Auto-Run All Turns ⚡</button>
+            <button id="btn-retry" class="btn btn-warning" style="display:none;">Retry Step 🔄</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Recent Sessions</h2>
+          <div id="recent-sessions-list" class="recent-list">
+            <div class="empty-text">Loading sessions...</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center & Right: Live Debate & Verdict -->
+      <main class="content-area">
+        <!-- Live Status Bar -->
+        <div class="status-ribbon" id="status-ribbon">
+          <div class="ribbon-item"><strong>Topic:</strong> <span id="ribbon-topic">None</span></div>
+          <div class="ribbon-item"><strong>Round:</strong> <span id="ribbon-round">-</span> / <span id="ribbon-max-rounds">-</span></div>
+          <div class="ribbon-item"><strong>Next Speaker:</strong> <span id="ribbon-speaker" class="speaker-pill">None</span></div>
+        </div>
+
+        <!-- Conversation Timeline -->
+        <section class="timeline-container">
+          <div class="section-header">
+            <h2>Boardroom Deliberation Record</h2>
+            <span class="message-count" id="message-count">0 messages</span>
+          </div>
+          <div id="messages-stream" class="messages-stream">
+            <div class="empty-timeline">
+              <div class="empty-icon">💬</div>
+              <h3>No Deliberation in Progress</h3>
+              <p>Enter a discussion topic on the left to start the multi-agent boardroom session.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Judge Verdict Section -->
+        <section id="verdict-section" class="verdict-section" style="display: none;">
+          <div class="verdict-card">
+            <div class="verdict-header">
+              <div class="verdict-title">
+                <span class="role-icon">⚖️</span>
+                <h2>Executive Judge Verdict</h2>
+              </div>
+              <span class="verdict-badge">SYNTHESIS COMPLETE</span>
+            </div>
+
+            <div class="verdict-grid">
+              <div class="verdict-box affirmative">
+                <h3>Strongest Supporting Case</h3>
+                <p id="v-strong-supp">-</p>
+                <div class="weakness-box">
+                  <h4>Identified Weaknesses & Gaps</h4>
+                  <p id="v-weak-supp">-</p>
+                </div>
+              </div>
+
+              <div class="verdict-box opposing">
+                <h3>Strongest Opposing Challenge</h3>
+                <p id="v-strong-opp">-</p>
+                <div class="weakness-box">
+                  <h4>Identified Deficiencies</h4>
+                  <p id="v-weak-opp">-</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="verdict-analysis">
+              <h3>Comparative Reasoning & Trade-off Analysis</h3>
+              <p id="v-reasoning">-</p>
+            </div>
+
+            <div class="verdict-final">
+              <h3>AI Recommended Assessment</h3>
+              <p id="v-assessment">-</p>
+            </div>
+
+            <!-- Human-in-the-Loop Governance Decision -->
+            <div id="human-governance-box" class="human-governance-box">
+              <h3>👤 Human Executive Final Decision</h3>
+              <p class="governance-subtitle">As the human decision-maker, evaluate the evidence above and record your binding determination.</p>
+              
+              <div class="decision-inputs">
+                <textarea id="decision-notes" rows="2" placeholder="Rationale, stipulations, or executive caveats (optional)..."></textarea>
+                <div class="decision-actions">
+                  <button id="btn-accept" class="btn btn-success">Accept Verdict ✔</button>
+                  <button id="btn-reject" class="btn btn-danger">Reject Verdict ✖</button>
+                </div>
+              </div>
+              <div id="decision-result" class="decision-result" style="display:none;"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
