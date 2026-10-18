@@ -1,208 +1,243 @@
 # Multi-Agent AI Boardroom
+### *Enterprise Multi-Agent Deliberation & Executive Governance Platform*
 
-An enterprise-grade, bounded multi-agent deliberation platform built with **FastAPI**, **Pydantic v2**, and **SQLAlchemy**. The system orchestrates four distinct AI roles (**Moderator**, **Supporting Agent**, **Opposing Agent**, and **Judge**) to debate high-stakes technical or strategic propositions before presenting a structured, high-integrity verdict to an executive **Human Decision-Maker**.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com/)
+[![Pydantic v2](https://img.shields.io/badge/Pydantic-v2-E92063.svg)](https://docs.pydantic.dev/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%2B-D71F00.svg)](https://www.sqlalchemy.org/)
+[![Tests](https://img.shields.io/badge/Tests-19%2F19%20Passing-brightgreen.svg)](tests/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
-## 🏛️ Architecture Overview
+## Executive Summary & Problem Statement
 
-The system implements an explicit, deterministic Finite State Machine (FSM) where the **Moderator** strictly controls execution flow, turn bounds, and context handoff between opposing agents.
+Unconstrained autonomous LLM agent loops present critical failure modes when applied to enterprise governance:
+1. **Unbounded Deliberation & Cost Spikes**: Without deterministic halting conditions, autonomous agents wander into degenerative conversational loops or run up exponential token bills.
+2. **Lack of Dialectical Scrutiny**: Single-prompt LLMs exhibit sycophancy, premature convergence, and confirmation bias.
+3. **Black-Box Decision Making**: Opaque multi-agent chatter fails to surface verifiable trade-offs, structured dissent, or clear audit trails.
+4. **Absence of Human-in-the-Loop Authority**: Purely automated agents should not unilaterally commit an enterprise to strategic, financial, or architectural decisions.
+
+The **Multi-Agent AI Boardroom** solves these failure modes by orchestrating four specialized AI personas (**Moderator**, **Supporting Agent**, **Opposing Agent**, and **Judge**) across an explicit, deterministic Finite State Machine (FSM). The system forces structured dialectical debate, guarantees mathematical stopping limits, validates outputs with typed Pydantic v2 schemas, and places the executive human decision-maker as the final gatekeeper.
+
+---
+
+## Core System Architecture
+
+The orchestration engine rejects loose agentic frameworks in favor of an **auditable, deterministic state transition model**. Each debate turn is persisted transactionally, serialized per session, and bound to immutable sequence numbers.
 
 ```mermaid
 flowchart TD
-    Start(["User Topic"]) --> CREATED["Status: CREATED"]
-    CREATED --> MOD["Moderator: Opening"]
-    MOD --> SUPP_R1["Supporting Agent: Opening Case"]
-    SUPP_R1 --> OPP_R1["Opposing Agent: Rebuttal"]
+    Start(["Executive Proposition / Topic"]) --> CREATED["Session State: CREATED"]
+    CREATED --> MOD["1. Moderator: Rules & Stage Setting"]
+    MOD --> SUPP_R1["2. Supporting Agent: Affirmative Case"]
+    SUPP_R1 --> OPP_R1["3. Opposing Agent: Targeted Rebuttal"]
     
-    OPP_R1 --> CHECK_ROUNDS{"Round < Max Rounds?"}
-    CHECK_ROUNDS -- "Yes (Round++)" --> SUPP_RX["Supporting Agent: Defense & Counter"]
-    SUPP_RX --> OPP_RX["Opposing Agent: Cross-Rebuttal"]
+    OPP_R1 --> CHECK_ROUNDS{"Current Round < Max Rounds?"}
+    CHECK_ROUNDS -- "Yes (Iterate Round)" --> SUPP_RX["Supporting Agent: Defense & Counter-Evidence"]
+    SUPP_RX --> OPP_RX["Opposing Agent: Cross-Rebuttal & Risk Exposure"]
     OPP_RX --> CHECK_ROUNDS
     
-    CHECK_ROUNDS -- "No (Limit Reached)" --> JUDGE["Judge: Synthesis & Structured Verdict"]
+    CHECK_ROUNDS -- "No (Bounds Satisfied)" --> JUDGE["4. AI Judge: Impartial Synthesis & Structured Verdict"]
     JUDGE --> AWAIT_HUMAN["Status: AWAITING_HUMAN_DECISION"]
     
-    AWAIT_HUMAN --> HUMAN_DECISION{"Human Decision"}
-    HUMAN_DECISION -- "ACCEPT" --> COMPLETED_ACC["Status: COMPLETED (Accepted)"]
-    HUMAN_DECISION -- "REJECT" --> COMPLETED_REJ["Status: COMPLETED (Rejected)"]
+    AWAIT_HUMAN --> HUMAN_DECISION{"Executive Decision-Maker"}
+    HUMAN_DECISION -- "ACCEPT" --> COMPLETED_ACC["Final Status: COMPLETED (Accepted)"]
+    HUMAN_DECISION -- "REJECT" --> COMPLETED_REJ["Final Status: COMPLETED (Rejected)"]
 ```
 
-### System Component Diagram
+### Layered Architecture & Component Separation
 
 ```mermaid
 flowchart LR
     subgraph Client [Presentation Layer]
-        UI[Responsive Modern Web UI]
+        UI["Modern Web Interface<br/>(Live Deliberation Ribbon & Structured Verdict)"]
     end
 
-    subgraph API [FastAPI Backend]
-        Router[Session & Turn Endpoints]
-        FSM[Deterministic State Machine]
-        Orchestrator[Boardroom Orchestrator]
+    subgraph Backend [FastAPI Application Core]
+        Router["REST API Endpoints (/api/sessions)"]
+        FSM["Deterministic State Machine (Enum-Checked)"]
+        Orchestrator["Boardroom Orchestrator (Session Locks & Context Pipeline)"]
     end
 
-    subgraph Persistence [Data Layer]
-        SQLite[(SQLAlchemy / SQLite or Postgres)]
+    subgraph Storage [Persistence Layer]
+        DB[("Relational Store (SQLAlchemy ORM)<br/>SQLite Default / PostgreSQL Production")]
     end
 
-    subgraph Intelligence [LLM Layer]
-        Adapter[LLM Client Adapter]
-        Prompts[Versioned Prompts]
-        Mock[High-Fidelity Mock Provider]
-        OpenAI[OpenAI / Compatible Provider]
+    subgraph Intelligence [LLM Integration Layer]
+        Adapter["BaseLLMClient Abstraction"]
+        Mock["Mock Provider (Deterministic Offline Testing)"]
+        OpenAI["OpenAI Adapter (Exponential Backoff & Key Masking)"]
     end
 
     UI <--> Router
     Router --> Orchestrator
     Orchestrator --> FSM
-    Orchestrator <--> Persistence
+    Orchestrator <--> DB
     Orchestrator --> Adapter
-    Adapter --> Prompts
     Adapter --> Mock
     Adapter --> OpenAI
 ```
 
 ---
 
-## 🎭 Agent Roles & Behavior
+## The Four Deliberation Personas
 
-1. **Moderator (Version 1.0.0)**:
-   - Establishes discussion rules and states the proposition neutrally.
-   - Enforces turn boundaries, prevents hallucinated external evidence, and sets the stage.
-2. **Supporting Agent (Version 1.0.0)**:
-   - Constructs the strongest reasonable affirmative argument with explicit reasoning and empirical mechanisms.
-   - In subsequent rounds, directly refutes the opposing agent's actual objections rather than repeating opening remarks.
-3. **Opposing Agent (Version 1.0.0)**:
-   - Evaluates the actual supporting argument presented in previous turns.
-   - Identifies fragile assumptions, hidden capital/operational costs, and points of systemic failure.
-4. **Judge (Version 1.0.0)**:
-   - Impartially assesses both arguments based on reasoning quality, relevance, and trade-offs.
-   - Outputs a validated Pydantic JSON verdict detailing strongest points, weaknesses, and a recommended assessment.
-5. **Human Executive**:
-   - Holds final governance authority to **Accept** or **Reject** the verdict with executive caveats and timestamped persistence.
+| Persona | Core Responsibility | Dialectical Function | Output Contract |
+| :--- | :--- | :--- | :--- |
+| **🏛️ Moderator** | Enforces discussion scope, establishes ground rules, and contextualizes the proposition. | Eliminates bias, frames boundary conditions, and sets turn sequencing. | Plaintext statement framed neutrally; zero affirmative or negative bias. |
+| **🛡️ Supporting Agent** | Builds the strongest defensible affirmative case for the proposition. | Leverages empirical mechanisms, operational leverage, and upside models. In round 2+, directly defends against opponent's critique. | Unflinching affirmative reasoning directly addressing the proposition. |
+| **⚔️ Opposing Agent** | Evaluates the actual supporting arguments presented in previous turns. | Uncovers fragile assumptions, unbudgeted capital/operational drag, technical debt, and risk vectors. | Targeted counter-arguments grounded in the opponent's recorded transcript. |
+| **⚖️ AI Judge** | Synthesizes opposing arguments into an objective comparative balance sheet. | Weighs evidence quality, evaluates risk asymmetry, and issues an actionable recommendation. | **Strict Pydantic JSON Schema** (`VerdictStructuredOutput`). |
+| **👤 Human Executive** | Evaluates the synthesized verdict and issues the binding governance decision. | Final authority. The AI recommends; the executive decides. | Binding verdict record (`ACCEPTED` or `REJECTED`) with executive rationale. |
 
 ---
 
-## 🚀 Quickstart & Setup
+## Production Engineering & Reliability Principles
+
+### 1. Deterministic Bounded Execution
+- **Strict Turn Bounds**: Debate rounds are strictly constrained ($1 \le \text{rounds} \le 5$, default: 2). Infinite agent ping-pong is mathematically impossible.
+- **FSM Transitions**: Illegal state transitions (e.g., attempting to advance a completed session or jumping directly to verdict) raise `InvalidStateTransitionError` and return `400 Bad Request`.
+
+### 2. Failure Recovery & Session Resilience
+- **Partial Failure Resumption**: If an LLM call encounters network partition or timeout, the session transitions to `FAILED`. Prior turns remain committed in the relational database. Calling `POST /api/sessions/{id}/retry` re-enters the state machine at the exact interrupted turn without re-running completed steps.
+- **Transactional Consistency**: Database operations are atomic per turn. Partial writes and corrupted session states are structurally prevented.
+
+### 3. Concurrency Control & Idempotency
+- **In-Process Mutex Serialization**: Every active session is governed by a dedicated in-memory lock (`_session_locks`) preventing race conditions from simultaneous requests.
+- **Network Idempotency**: Turn advancement endpoints accept an `idempotency_key`. Redundant client retries return the current state without duplicate LLM inference or message duplication.
+
+### 4. Zero-Trust Security & Credential Isolation
+- **12-Factor Configuration**: Environment variables take absolute precedence over local configuration (`OS Environment > .env > Pydantic Defaults`).
+- **Secret Sanitization**: Error logging routines pass raw provider exceptions through regex pattern scrubbers (`re.sub(r'sk-[a-zA-Z0-9]{20,}', '[REDACTED]', ...)`) ensuring API keys are never leaked to logs, client responses, or APM traces.
+- **Zero-Secret Repository**: `.env` and SQLite databases are strictly excluded from source control.
+
+---
+
+## Structured AI Output: The Pydantic Verdict Schema
+
+The AI Judge is constrained to an immutable Pydantic schema (`VerdictStructuredOutput`), guaranteeing valid deserialization:
+
+```python
+class VerdictStructuredOutput(BaseModel):
+    strongest_supporting: str = Field(
+        ..., description="The strongest reasonable argument presented in favor of the proposition."
+    )
+    supporting_weaknesses: str = Field(
+        ..., description="Unaddressed gaps, unsupported assumptions, or risks in the supporting case."
+    )
+    strongest_opposing: str = Field(
+        ..., description="The strongest counterargument or challenge presented against the proposition."
+    )
+    opposing_weaknesses: str = Field(
+        ..., description="Unaddressed gaps, overstatements, or risks in the opposing case."
+    )
+    reasoning: str = Field(
+        ..., description="Comparative evaluation of evidence, trade-offs, and logical consistency."
+    )
+    final_assessment: str = Field(
+        ..., description="Balanced synthesized recommendation for the executive decision-maker."
+    )
+```
+
+---
+
+## Production Deployment & Operational Runbook
 
 ### Prerequisites
 - Python 3.10+
-- `pip`
+- Virtual environment (`venv` or `conda`)
 
-### 1. Clone & Install Dependencies
+### 1. Installation
 ```bash
-git clone <repo-url>
-cd gallant-shannon
+git clone https://github.com/harshthanki-codes/Multi_AI_Agent_System.git
+cd Multi_AI_Agent_System
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment Variables
-Copy the `.env.example` file to `.env`:
+### 2. Environment Configuration
+The platform runs out-of-the-box in hermetic **Mock Provider** mode (`LLM_PROVIDER=mock`), requiring zero external API keys or cloud spend.
+
+To connect live OpenAI or Azure/compatible endpoints, configure `.env`:
 ```bash
 cp .env.example .env
 ```
-
-Default configuration runs in deterministic mock mode (`LLM_PROVIDER=mock`) requiring **no external API keys** or paid usage.
-
-To connect your real OpenAI key:
-```env
+```ini
 LLM_PROVIDER=openai
-OPENAI_API_KEY=your_actual_openai_api_key_here
+OPENAI_API_KEY=sk-proj-your-actual-api-key
 OPENAI_MODEL=gpt-4o-mini
+LLM_REQUEST_TIMEOUT_SECONDS=30.0
 ```
 
-### 3. Run the Application
+### 3. Launching the Service
 ```bash
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
-
-Open your browser at: **`http://localhost:8000`**
-
----
-
-## 📡 REST API Reference
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/sessions` | Create a new boardroom session with a topic and max rounds. |
-| `GET` | `/api/sessions` | List recent boardroom sessions. |
-| `GET` | `/api/sessions/{session_id}` | Retrieve session status, metadata, and full turn history. |
-| `POST` | `/api/sessions/{session_id}/advance` | Execute exactly one discrete agent turn (supports `idempotency_key`). |
-| `POST` | `/api/sessions/{session_id}/auto-run` | Automatically advance turns until reaching `AWAITING_HUMAN_DECISION`. |
-| `GET` | `/api/sessions/{session_id}/verdict` | Retrieve the structured AI Judge's verdict. |
-| `POST` | `/api/sessions/{session_id}/decision` | Record the final human decision (`ACCEPTED` or `REJECTED`) and rationale. |
-| `POST` | `/api/sessions/{session_id}/retry` | Recover and resume a session marked `FAILED` without losing prior turns. |
+- **Web Interface**: `http://127.0.0.1:8000`
+- **Interactive OpenAPI Documentation**: `http://127.0.0.1:8000/docs`
 
 ---
 
-## 🛡️ Reliability, Idempotency & Fault Tolerance
+## API Specification
 
-1. **Deterministic State Machine**: Unsanctioned jumps across debate states or calls after completion raise `InvalidStateTransitionError`.
-2. **Duplicate Prevention**: Operations accept an `idempotency_key`. Repeating the same key returns the existing state without repeating LLM inference or appending duplicate messages.
-3. **Partial-Session Recovery**: If an LLM call times out or encounters transient network errors, the session is marked `FAILED` while all previous turns remain safely committed in the database. Calling `POST /api/sessions/{id}/retry` seamlessly resumes from the exact failed step.
-4. **Exponential Backoff & Jitter**: The OpenAI client retries transient rate limits and timeouts with randomized exponential backoff while immediately rejecting non-retryable 401/403 authentication failures.
+| Method | Path | Summary | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/sessions` | Create Session | Initialize a boardroom debate topic and configure maximum rounds. |
+| `GET` | `/api/sessions` | List Sessions | Retrieve paginated history of boardroom sessions and current states. |
+| `GET` | `/api/sessions/{id}` | Get Session | Retrieve full session metadata, state machine status, and complete message transcript. |
+| `POST` | `/api/sessions/{id}/advance` | Advance Turn | Advance the debate by exactly one discrete agent turn (idempotency-key supported). |
+| `POST` | `/api/sessions/{id}/auto-run` | Auto-Run | Automatically orchestrate all debate turns through to `AWAITING_HUMAN_DECISION`. |
+| `GET` | `/api/sessions/{id}/verdict` | Get Verdict | Fetch the validated structured JSON verdict produced by the AI Judge. |
+| `POST` | `/api/sessions/{id}/decision` | Record Decision | Submit binding human decision (`ACCEPTED` / `REJECTED`) with optional audit rationale. |
+| `POST` | `/api/sessions/{id}/retry` | Resume Session | Recover a `FAILED` session from its last successful turn without data loss. |
 
 ---
 
-## 🧪 Automated Test Suite
+## Quality Assurance & Automated Test Suite
 
-All 12+ deterministic test scenarios run offline without paid API credentials:
+The repository includes a comprehensive, offline test suite covering lifecycle orchestration, state machine transitions, concurrency locks, schema validation, and error sanitization:
+
 ```bash
-pytest -v
+python -m pytest -v
 ```
 
-### Test Coverage Highlights:
-- ✅ Session creation & Pydantic input validation.
-- ✅ Correct deterministic agent execution order.
-- ✅ Context passing: verified that opposing agents receive actual prior arguments.
-- ✅ Bounded round-limit enforcement and stopping conditions.
-- ✅ Judge Pydantic output schema validation.
-- ✅ Authentication errors and LLM timeout handling.
-- ✅ Partial-session failure recovery and state resumption.
-- ✅ Idempotency & duplicate request prevention.
-- ✅ Data persistence across separate SQLite connections/restarts.
-- ✅ Human decision acceptance/rejection flow.
-- ✅ Complete end-to-end deliberation lifecycle.
+```text
+tests/test_api.py::test_api_session_lifecycle PASSED                     [  5%]
+tests/test_api.py::test_api_invalid_topic PASSED                         [ 10%]
+tests/test_boardroom.py::test_session_creation_and_input_validation PASSED [ 15%]
+tests/test_boardroom.py::test_agent_execution_order PASSED               [ 21%]
+tests/test_boardroom.py::test_context_passing_between_agents PASSED      [ 26%]
+tests/test_boardroom.py::test_round_limit_enforcement PASSED             [ 31%]
+tests/test_boardroom.py::test_judge_structured_verdict_validation PASSED [ 36%]
+tests/test_boardroom.py::test_llm_timeout_marks_session_failed PASSED    [ 42%]
+tests/test_boardroom.py::test_missing_credentials_raises_auth_error PASSED [ 47%]
+tests/test_boardroom.py::test_partial_session_recovery_after_failure PASSED [ 52%]
+tests/test_boardroom.py::test_idempotency_prevents_duplicate_messages PASSED [ 57%]
+tests/test_boardroom.py::test_persistence_across_reconnect PASSED        [ 63%]
+tests/test_boardroom.py::test_human_acceptance_and_rejection_workflow PASSED [ 68%]
+tests/test_boardroom.py::test_complete_end_to_end_session PASSED         [ 73%]
+tests/test_boardroom.py::test_state_machine_transition_validation PASSED [ 78%]
+tests/test_boardroom.py::test_concurrent_session_advance_serialization PASSED [ 84%]
+tests/test_boardroom.py::test_provider_selection_and_default_mock PASSED [ 89%]
+tests/test_boardroom.py::test_malformed_judge_json_error_classification PASSED [ 94%]
+tests/test_boardroom.py::test_error_message_does_not_leak_keys PASSED    [100%]
+
+============================= 19 passed in 13.53s =============================
+```
 
 ---
 
-## 📋 Example Boardroom Deliberation
+## Strategic Architecture Decisions & Enterprise Roadmap
 
-**Topic:** *"Should we migrate our monolithic backend to a distributed event-driven microservices architecture this quarter?"*
+### Key Trade-Offs Made
+1. **Deterministic Custom FSM over LangGraph / CrewAI**:
+   - *Rationale*: Generic multi-agent frameworks introduce unbounded dependency trees, prompt leakage, and unpredictable execution loops. A custom, explicit FSM provides 100% deterministic auditing, low memory overhead, and crystal-clear transaction boundaries.
+2. **Synchronous REST Turn Execution vs. WebSockets**:
+   - *Rationale*: Discrete HTTP `POST` turn execution provides immediate RESTful idempotency, reliable proxy caching, and step-by-step auditability without persistent socket connection drops across mobile/corporate networks.
 
-### Transcript:
-1. **Moderator (Round 1)**:
-   > "Welcome, members of the Boardroom. Today we convene to deliberate upon the submitted proposition. The objective is rigorous strategic scrutiny. The Supporting Agent will articulate the affirmative case... The Opposing Agent will challenge premises... The boardroom is now officially in session."
-
-2. **Supporting Agent (Round 1)**:
-   > "We strongly advocate for advancing this proposition. First, from an operational and strategic standpoint, it addresses critical developer bottlenecks and decouples high-velocity payment services from slower legacy modules. Second, industry benchmarks demonstrate that domain-driven microservices yield superior horizontal elasticity..."
-
-3. **Opposing Agent (Round 1)**:
-   > "I must challenge the affirmative case. The Supporting Agent relies on an overly optimistic assumption of organizational readiness. Decomposing a functional monolith introduces distributed transaction latency, eventual consistency hurdles, and observability overhead. Premature migration frequently diverts engineering focus from product delivery..."
-
-4. **Judge Structured Verdict**:
-   - **Strongest Supporting**: *"Targeted decoupling removes deployment contention and unlocks horizontal scaling for critical services."*
-   - **Supporting Weaknesses**: *"Underestimates the severe operational overhead of distributed systems and observability complexity."*
-   - **Strongest Opposing**: *"Highlighted that premature scaling without unified distributed tracing and team readiness creates operational drag."*
-   - **Opposing Weaknesses**: *"Overly conservative bias that fails to provide a strategy for scaling past existing monolithic limits."*
-   - **Final Assessment**: *"CONDITIONAL APPROVAL: Execute an initial strangler-fig pilot on one non-critical domain (e.g., Notifications) before authorizing enterprise-wide core migration."*
-
-5. **Human Executive Decision**:
-   - **Status**: `ACCEPTED`
-   - **Timestamp**: `2026-10-16 13:30:00 UTC`
-   - **Rationale**: *"Approved strictly as a pilot for the Notification service with latency SLAs."*
-
----
-
-## ⚖️ Design Decisions & Trade-Offs
-
-1. **Finite State Machine vs Autonomous Loop**:
-   - *Decision*: We implemented a rigid, bounded state machine over an unconstrained autonomous loop.
-   - *Rationale*: Enterprise boardroom deliberations require strict auditability, deterministic costs, predictable stopping bounds, and human control.
-2. **Provider Agnostic LLM Interface**:
-   - *Decision*: Abstracted LLM execution behind `BaseLLMClient` with both `MockLLMClient` and `OpenAILLMClient`.
-   - *Rationale*: Guarantees that CI, testing, and initial evaluations cost $0 and run in milliseconds, while supporting real OpenAI/compatible models via `.env`.
-3. **Database Architecture**:
-   - *Decision*: Pure SQLAlchemy ORM with SQLite default and PostgreSQL compatibility.
-   - *Rationale*: Zero-setup development and easy deployment to cloud PostgreSQL (e.g. Supabase, AWS RDS, Cloud SQL) simply by altering `DATABASE_URL`.
+### Roadmap & Enterprise Scaling
+- **Distributed Lock Management**: Migrate in-process `_session_locks` to Redis (`redlock`) or Postgres advisory locks for multi-pod Kubernetes deployments.
+- **Asynchronous Task Workers**: Decouple turn advancement into background Celery/ARQ workers with Server-Sent Events (SSE) for client streaming.
+- **Domain Fine-Tuning**: Support role-specific model assignments (e.g., Claude 3.5 Sonnet for Opposing scrutiny, GPT-4o for Judge synthesis).
